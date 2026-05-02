@@ -1,5 +1,18 @@
 sealed class ArduinoResponse {
   const ArduinoResponse();
+
+  factory ArduinoResponse.fromLine(String line) {
+    switch (line) {
+      case 'r':
+        return const ResetResponse();
+
+      case final n when int.tryParse(n) != null:
+        return PlayerWonResponse(int.parse(n));
+
+      default:
+        return ErrorResponse('Unknown response: $line');
+    }
+  }
 }
 
 final class ResetResponse extends ArduinoResponse {
