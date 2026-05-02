@@ -14,7 +14,7 @@ class ArduinoRepository {
   String _buffer = '';
 
   void _log(String message) {
-    developer.log(message, name: 'ArduinoRepository');
+    developer.log(message, name: '$ArduinoRepository');
   }
 
   Stream<ArduinoResponse> get responses => _responseController.stream;
@@ -32,6 +32,7 @@ class ArduinoRepository {
 
       if (!opened) {
         _log('Failed to open port: ${SerialPort.lastError}');
+
         return false;
       }
 
@@ -60,6 +61,7 @@ class ArduinoRepository {
       return true;
     } catch (e) {
       _log('Connection error: $e');
+
       return false;
     }
   }
@@ -75,18 +77,9 @@ class ArduinoRepository {
       final line = lines[i].trim();
       if (line.isNotEmpty) {
         _log('Parsing line: $line');
-        _parseResponse(line);
+
+        _responseController.add(ArduinoResponse.fromLine(line));
       }
-    }
-  }
-
-  void _parseResponse(String line) {
-    switch (line) {
-      case 'r':
-        _responseController.add(const ResetResponse());
-
-      case final n when int.tryParse(n) != null:
-        _responseController.add(PlayerWonResponse(int.parse(n)));
     }
   }
 

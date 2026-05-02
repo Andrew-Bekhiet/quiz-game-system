@@ -6,11 +6,15 @@ sealed class QuizGameState with EquatableMixin {
 
 final class QuizGameStateDisconnected extends QuizGameState {
   final List<String> availablePorts;
+  final String? selectedPort;
 
   @override
-  List<Object?> get props => [availablePorts];
+  List<Object?> get props => [availablePorts, selectedPort];
 
-  const QuizGameStateDisconnected({this.availablePorts = const []});
+  const QuizGameStateDisconnected({
+    this.selectedPort,
+    this.availablePorts = const [],
+  });
 }
 
 final class QuizGameStateConnecting extends QuizGameState {
@@ -21,19 +25,25 @@ final class QuizGameStateConnecting extends QuizGameState {
 }
 
 final class QuizGameStateWaiting extends QuizGameState {
-  @override
-  List<Object?> get props => [];
+  final Map<int, int> playerScores;
 
-  const QuizGameStateWaiting();
+  @override
+  List<Object?> get props => [playerScores];
+
+  const QuizGameStateWaiting({required this.playerScores});
 }
 
 final class QuizGameStatePlayerWon extends QuizGameState {
   final int playerNumber;
+  final Map<int, int> playerScores;
 
   @override
-  List<Object?> get props => [playerNumber];
+  List<Object?> get props => [playerNumber, playerScores];
 
-  const QuizGameStatePlayerWon({required this.playerNumber});
+  const QuizGameStatePlayerWon({
+    required this.playerNumber,
+    required this.playerScores,
+  });
 }
 
 final class QuizGameStateError extends QuizGameState {

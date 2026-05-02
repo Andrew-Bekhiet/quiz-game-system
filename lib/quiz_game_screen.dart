@@ -3,6 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:quiz_app/cubit/quiz_game_cubit.dart';
 import 'package:quiz_app/cubit/quiz_game_state.dart';
 
+const player1Color = Colors.redAccent;
+const player2Color = Colors.blueAccent;
+
 class QuizGameScreen extends StatefulWidget {
   const QuizGameScreen({super.key});
 
@@ -11,19 +14,6 @@ class QuizGameScreen extends StatefulWidget {
 }
 
 class _QuizGameScreenState extends State<QuizGameScreen> {
-  String? _selectedPort;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final s = context.read<QuizGameCubit>().state;
-      if (s case QuizGameStateDisconnected(:final availablePorts)) {
-        setState(() => _syncSelectedPort(availablePorts));
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -38,8 +28,11 @@ class _QuizGameScreenState extends State<QuizGameScreen> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.quiz_outlined,
-                      color: theme.colorScheme.primary, size: 32),
+                  Icon(
+                    Icons.quiz_outlined,
+                    color: theme.colorScheme.primary,
+                    size: 32,
+                  ),
                   const SizedBox(width: 12),
                   Text(
                     'Quiz buzzer',
@@ -59,6 +52,7 @@ class _QuizGameScreenState extends State<QuizGameScreen> {
                           state is! QuizGameStatePlayerWon) {
                         return const SizedBox.shrink();
                       }
+
                       return TextButton.icon(
                         onPressed: () =>
                             context.read<QuizGameCubit>().disconnect(),
@@ -82,41 +76,51 @@ class _QuizGameScreenState extends State<QuizGameScreen> {
               ),
               const SizedBox(height: 24),
               Expanded(
-                child: BlocConsumer<QuizGameCubit, QuizGameState>(
-                  listener: (context, state) {
-                    if (state is QuizGameStateDisconnected) {
-                      setState(() {
-                        _syncSelectedPort(state.availablePorts);
-                      });
-                    }
-                  },
+                child: BlocBuilder<QuizGameCubit, QuizGameState>(
                   builder: (context, state) {
                     return switch (state) {
-                      QuizGameStateDisconnected(:final availablePorts) =>
+                      QuizGameStateDisconnected(
+                        :final availablePorts,
+                        :final selectedPort,
+                      ) =>
                         _DisconnectedBody(
                           ports: availablePorts,
-                          selectedPort: _selectedPort,
-                          onPortChanged: (p) =>
-                              setState(() => _selectedPort = p),
-                          onRefresh: () => context
+                          selectedPort: selectedPort,
+                          onPortChanged: context
                               .read<QuizGameCubit>()
-                              .refreshPorts(),
-                          onConnect: _selectedPort == null
+                              .selectPort,
+                          onRefresh: () =>
+                              context.read<QuizGameCubit>().refreshPorts(),
+                          onConnect: selectedPort == null
                               ? null
-                              : () => context
-                                  .read<QuizGameCubit>()
-                                  .connect(_selectedPort!),
+                              : () => context.read<QuizGameCubit>().connect(
+                                  selectedPort,
+                                ),
                         ),
-                      QuizGameStateConnecting() =>
-                        const _ConnectingBody(),
-                      QuizGameStateWaiting() => const _LiveGameBody(),
-                      QuizGameStatePlayerWon(:final playerNumber) =>
-                        _WinnerBody(playerNumber: playerNumber),
+                      QuizGameStateConnecting() => const _ConnectingBody(),
+                      QuizGameStateWaiting(:final playerScores) =>
+                        _LiveGameBody(
+                          onResetCounter: context
+                              .read<QuizGameCubit>()
+                              .resetCounter,
+                          playerScores: playerScores,
+                        ),
+                      QuizGameStatePlayerWon(
+                        :final playerNumber,
+                        :final playerScores,
+                      ) =>
+                        _WinnerBody(
+                          onResetCounter: context
+                              .read<QuizGameCubit>()
+                              .resetCounter,
+                          playerNumber: playerNumber,
+                          playerScores: playerScores,
+                        ),
                       QuizGameStateError(:final message) => _ErrorBody(
-                          message: message,
-                          onRetry: () =>
-                              context.read<QuizGameCubit>().disconnect(),
-                        ),
+                        message: message,
+                        onRetry: () =>
+                            context.read<QuizGameCubit>().disconnect(),
+                      ),
                     };
                   },
                 ),
@@ -126,17 +130,6 @@ class _QuizGameScreenState extends State<QuizGameScreen> {
         ),
       ),
     );
-  }
-
-  void _syncSelectedPort(List<String> ports) {
-    if (ports.isEmpty) {
-      _selectedPort = null;
-      return;
-    }
-    if (_selectedPort != null && ports.contains(_selectedPort)) {
-      return;
-    }
-    _selectedPort = ports.length == 1 ? ports.single : ports.first;
   }
 }
 
@@ -151,7 +144,7 @@ class _DisconnectedBody extends StatelessWidget {
 
   final List<String> ports;
   final String? selectedPort;
-  final ValueChanged<String?> onPortChanged;
+  final ValueChanged<String> onPortChanged;
   final VoidCallback onRefresh;
   final VoidCallback? onConnect;
 
@@ -175,9 +168,9 @@ class _DisconnectedBody extends StatelessWidget {
                 Text(
                   'Connect serial',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const Spacer(),
                 IconButton.filledTonal(
@@ -194,12 +187,16 @@ class _DisconnectedBody extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.link_off_rounded,
-                          size: 56, color: Colors.white.withValues(alpha: 0.35)),
+                      Icon(
+                        Icons.link_off_rounded,
+                        size: 56,
+                        color: Colors.white.withValues(alpha: 0.35),
+                      ),
                       const SizedBox(height: 16),
                       Text(
                         'No serial devices found.',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
                               color: Colors.white70,
                             ),
                       ),
@@ -207,8 +204,8 @@ class _DisconnectedBody extends StatelessWidget {
                       Text(
                         'Plug in the Arduino and tap refresh.',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.white54,
-                            ),
+                          color: Colors.white54,
+                        ),
                       ),
                     ],
                   ),
@@ -218,8 +215,8 @@ class _DisconnectedBody extends StatelessWidget {
               Text(
                 'Port',
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: Colors.white54,
-                    ),
+                  color: Colors.white54,
+                ),
               ),
               const SizedBox(height: 8),
               DropdownButtonHideUnderline(
@@ -231,8 +228,10 @@ class _DisconnectedBody extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
                     ),
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
                   ),
                   child: DropdownButton<String>(
                     isExpanded: true,
@@ -240,20 +239,19 @@ class _DisconnectedBody extends StatelessWidget {
                     style: const TextStyle(color: Colors.white),
                     value: selectedPort,
                     items: ports
-                        .map(
-                          (p) =>
-                              DropdownMenuItem(value: p, child: Text(p)),
-                        )
+                        .map((p) => DropdownMenuItem(value: p, child: Text(p)))
                         .toList(),
-                    onChanged: onPortChanged,
+                    onChanged: (p) => onPortChanged(p ?? ''),
                   ),
                 ),
               ),
               const SizedBox(height: 24),
               FilledButton.icon(
                 style: FilledButton.styleFrom(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 16,
+                    horizontal: 20,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -288,8 +286,8 @@ class _ConnectingBody extends StatelessWidget {
           Text(
             'Opening serial…',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Colors.white70,
-                ),
+              color: Colors.white70,
+            ),
           ),
         ],
       ),
@@ -298,7 +296,13 @@ class _ConnectingBody extends StatelessWidget {
 }
 
 class _LiveGameBody extends StatelessWidget {
-  const _LiveGameBody();
+  final Map<int, int> playerScores;
+  final VoidCallback onResetCounter;
+
+  const _LiveGameBody({
+    required this.playerScores,
+    required this.onResetCounter,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -328,43 +332,49 @@ class _LiveGameBody extends StatelessWidget {
               Text(
                 'Live — first buzz wins',
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: const Color(0xFFAAF0C4),
-                      fontWeight: FontWeight.w600,
-                    ),
+                  color: const Color(0xFFAAF0C4),
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ],
           ),
         ),
         const SizedBox(height: 28),
-        const Expanded(
+        Expanded(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
                 child: _PlayerPanel(
+                  score: playerScores[1] ?? 0,
                   team: 1,
                   lit: true,
-                  accent: Color(0xFF3498DB),
+                  accent: player1Color,
                 ),
               ),
-              SizedBox(width: 16),
+              const SizedBox(width: 16),
               Expanded(
                 child: _PlayerPanel(
+                  score: playerScores[2] ?? 0,
                   team: 2,
                   lit: true,
-                  accent: Color(0xFFE67E22),
+                  accent: player2Color,
                 ),
               ),
             ],
           ),
         ),
         const SizedBox(height: 20),
+        FilledButton(
+          onPressed: onResetCounter,
+          child: const Text('Reset Counter'),
+        ),
         Text(
           'Press the hardware RESET on the Arduino to start another round.',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.white.withValues(alpha: 0.45),
-              ),
+            color: Colors.white.withValues(alpha: 0.45),
+          ),
         ),
       ],
     );
@@ -373,11 +383,13 @@ class _LiveGameBody extends StatelessWidget {
 
 class _PlayerPanel extends StatelessWidget {
   const _PlayerPanel({
+    required this.score,
     required this.team,
     required this.lit,
     required this.accent,
   });
 
+  final int score;
   final int team;
   final bool lit;
   final Color accent;
@@ -415,16 +427,16 @@ class _PlayerPanel extends StatelessWidget {
           Text(
             'Player $team',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
-            lit ? 'Armed' : 'Out',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: lit ? accent : Colors.white38,
-                ),
+            score.toString(),
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              color: lit ? accent : Colors.white38,
+            ),
           ),
         ],
       ),
@@ -433,16 +445,19 @@ class _PlayerPanel extends StatelessWidget {
 }
 
 class _WinnerBody extends StatelessWidget {
-  const _WinnerBody({required this.playerNumber});
+  const _WinnerBody({
+    required this.playerNumber,
+    required this.playerScores,
+    required this.onResetCounter,
+  });
 
+  final VoidCallback onResetCounter;
   final int playerNumber;
+  final Map<int, int> playerScores;
 
   @override
   Widget build(BuildContext context) {
-    final accent = playerNumber == 1
-        ? const Color(0xFF3498DB)
-        : const Color(0xFFE67E22);
-    final other = playerNumber == 1 ? 2 : 1;
+    final accent = playerNumber == 1 ? player1Color : player2Color;
 
     return Column(
       children: [
@@ -456,42 +471,52 @@ class _WinnerBody extends StatelessWidget {
         Text(
           'Player $playerNumber',
           style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -1,
-              ),
+            color: Colors.white,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -1,
+          ),
         ),
         Text(
           'BUZZED IN FIRST',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: accent,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 2,
-              ),
+            color: accent,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 2,
+          ),
         ),
         const SizedBox(height: 32),
         Row(
           children: [
             Expanded(
-              child: _PlayerPanel(team: playerNumber, lit: true, accent: accent),
+              child: _PlayerPanel(
+                score: playerScores[1] ?? 0,
+                team: 1,
+                lit: playerNumber == 1,
+                accent: accent,
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: _PlayerPanel(
-                team: other,
-                lit: false,
+                score: playerScores[2] ?? 0,
+                team: 2,
+                lit: playerNumber == 2,
                 accent: accent,
               ),
             ),
           ],
         ),
         const Spacer(),
+        FilledButton(
+          onPressed: onResetCounter,
+          child: const Text('Reset Counter'),
+        ),
         Text(
           'Reset on the Arduino clears the lamps and notifies this screen.',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.white.withValues(alpha: 0.45),
-              ),
+            color: Colors.white.withValues(alpha: 0.45),
+          ),
         ),
       ],
     );
@@ -515,23 +540,26 @@ class _ErrorBody extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.warning_amber_rounded,
-                size: 56, color: Colors.redAccent.shade200),
+            Icon(
+              Icons.warning_amber_rounded,
+              size: 56,
+              color: Colors.redAccent.shade200,
+            ),
             const SizedBox(height: 16),
             Text(
               'Something went wrong',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const SizedBox(height: 12),
             Text(
               message,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.white70,
-                  ),
+                color: Colors.white70,
+              ),
             ),
             const SizedBox(height: 24),
             FilledButton(

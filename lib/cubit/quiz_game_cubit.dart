@@ -6,11 +6,13 @@ import 'package:quiz_app/arduino_response.dart';
 import 'package:quiz_app/cubit/quiz_game_state.dart';
 
 class QuizGameCubit extends Cubit<QuizGameState> {
+  final Map<int, int> playerScores = {1: 0, 2: 0};
+
   final ArduinoRepository _arduinoRepo;
   StreamSubscription<ArduinoResponse>? _responseSubscription;
 
   QuizGameCubit(this._arduinoRepo) : super(const QuizGameStateDisconnected()) {
-    _init(false);
+    _init();
   }
 
   Future<void> _init([bool connectNow = true]) async {
@@ -23,6 +25,18 @@ class QuizGameCubit extends Cubit<QuizGameState> {
     }
   }
 
+  void selectPort(String portName) {
+    final state = this.state;
+    if (state is! QuizGameStateDisconnected) return;
+
+    emit(
+      QuizGameStateDisconnected(
+        availablePorts: state.availablePorts,
+        selectedPort: portName,
+      ),
+    );
+  }
+
   Future<void> connect(String portName) async {
     emit(const QuizGameStateConnecting());
 
@@ -30,20 +44,42 @@ class QuizGameCubit extends Cubit<QuizGameState> {
     if (success) {
       _responseSubscription = _arduinoRepo.responses.listen(_handleResponse);
 
-      emit(const QuizGameStateWaiting());
+      emit(QuizGameStateWaiting(playerScores: playerScores));
     } else {
       final ports = await _arduinoRepo.getAvailablePorts();
       emit(QuizGameStateDisconnected(availablePorts: ports));
     }
   }
 
+  void resetCounter() {
+    playerScores[1] = 0;
+    playerScores[2] = 0;
+
+    if (state is QuizGameStateWaiting) {
+      emit(QuizGameStateWaiting(playerScores: playerScores));
+    } else if (state case QuizGameStatePlayerWon(:final playerNumber)) {
+      emit(
+        QuizGameStatePlayerWon(
+          playerNumber: playerNumber,
+          playerScores: playerScores,
+        ),
+      );
+    }
+  }
+
   Future<void> _handleResponse(ArduinoResponse response) async {
     switch (response) {
       case ResetResponse():
-        emit(const QuizGameStateWaiting());
+        emit(QuizGameStateWaiting(playerScores: playerScores));
 
       case PlayerWonResponse(:final playerNumber):
-        emit(QuizGameStatePlayerWon(playerNumber: playerNumber));
+        playerScores[playerNumber] = (playerScores[playerNumber] ?? 0) + 1;
+        emit(
+          QuizGameStatePlayerWon(
+            playerScores: playerScores,
+            playerNumber: playerNumber,
+          ),
+        );
 
       case ErrorResponse(:final message):
         emit(QuizGameStateError(message: message));
