@@ -4,7 +4,7 @@ sealed class ArduinoResponse {
   factory ArduinoResponse.fromLine(String line) {
     switch (line) {
       case 'r':
-        return const ResetResponse();
+        return const ResetBuzzerResponse();
 
       case final n when int.tryParse(n) != null:
         return PlayerBuzzedResponse(int.parse(n));
@@ -15,8 +15,8 @@ sealed class ArduinoResponse {
   }
 }
 
-final class ResetResponse extends ArduinoResponse {
-  const ResetResponse();
+final class ResetBuzzerResponse extends ArduinoResponse {
+  const ResetBuzzerResponse();
 }
 
 final class PlayerBuzzedResponse extends ArduinoResponse {

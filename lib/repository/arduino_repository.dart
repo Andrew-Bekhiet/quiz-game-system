@@ -4,7 +4,7 @@ import 'dart:developer' as developer;
 import 'dart:typed_data';
 
 import 'package:flutter_libserialport/flutter_libserialport.dart';
-import 'package:quiz_app/arduino_response.dart';
+import 'package:quiz_app/models/arduino_response.dart';
 
 class ArduinoRepository {
   SerialPort? _port;

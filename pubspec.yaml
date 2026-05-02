@@ -31,3 +31,5 @@ flutter:
 
   assets:
     - assets/buzzer.wav
+    - assets/correct.mp3
+    - assets/wrong.wav

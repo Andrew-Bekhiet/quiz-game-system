@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:quiz_app/arduino_repository.dart';
+import 'package:quiz_app/audio/quiz_game_sounds.dart';
 import 'package:quiz_app/cubit/quiz_game_cubit.dart';
+import 'package:quiz_app/quiz/quiz_game_colors.dart';
 import 'package:quiz_app/quiz_game_screen.dart';
+import 'package:quiz_app/repository/arduino_repository.dart';
 
 void main() {
   runApp(
     BlocProvider(
-      create: (_) => QuizGameCubit(ArduinoRepository()),
+      create: (_) => QuizGameCubit(
+        ArduinoRepository(),
+        AudioplayersQuizGameSounds(),
+      ),
       child: const MainApp(),
     ),
   );
@@ -30,9 +35,9 @@ class MainApp extends StatelessWidget {
       title: 'Quiz buzzer',
       debugShowCheckedModeBanner: false,
       theme: base.copyWith(
-        scaffoldBackgroundColor: const Color(0xFF0F1419),
+        scaffoldBackgroundColor: quizBackgroundColor,
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF0F1419),
+          backgroundColor: quizBackgroundColor,
           foregroundColor: Colors.white,
         ),
       ),

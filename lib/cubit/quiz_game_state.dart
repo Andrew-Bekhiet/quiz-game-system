@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:quiz_app/models/player_data.dart';
 
 sealed class QuizGameState with EquatableMixin {
   const QuizGameState();
@@ -24,25 +25,29 @@ final class QuizGameStateConnecting extends QuizGameState {
   const QuizGameStateConnecting();
 }
 
-final class QuizGameStateWaiting extends QuizGameState {
-  final List<int> playerScores;
+final class QuizGameStateConnected extends QuizGameState {
+  final List<PlayerData> players;
+  final bool canRenamePlayers;
 
   @override
-  List<Object?> get props => [playerScores];
+  List<Object?> get props => [players, canRenamePlayers];
 
-  const QuizGameStateWaiting({required this.playerScores});
+  const QuizGameStateConnected({
+    required this.players,
+    required this.canRenamePlayers,
+  });
 }
 
 final class QuizGameStatePlayerBuzzed extends QuizGameState {
   final int playerNumber;
-  final List<int> playerScores;
+  final List<PlayerData> players;
 
   @override
-  List<Object?> get props => [playerNumber, playerScores];
+  List<Object?> get props => [playerNumber, players];
 
   const QuizGameStatePlayerBuzzed({
     required this.playerNumber,
-    required this.playerScores,
+    required this.players,
   });
 }
 
