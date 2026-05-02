@@ -7,7 +7,7 @@ sealed class ArduinoResponse {
         return const ResetResponse();
 
       case final n when int.tryParse(n) != null:
-        return PlayerWonResponse(int.parse(n));
+        return PlayerBuzzedResponse(int.parse(n));
 
       default:
         return ErrorResponse('Unknown response: $line');
@@ -19,10 +19,10 @@ final class ResetResponse extends ArduinoResponse {
   const ResetResponse();
 }
 
-final class PlayerWonResponse extends ArduinoResponse {
+final class PlayerBuzzedResponse extends ArduinoResponse {
   final int playerNumber;
 
-  const PlayerWonResponse(this.playerNumber);
+  const PlayerBuzzedResponse(this.playerNumber);
 }
 
 final class ErrorResponse extends ArduinoResponse {

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:quiz_app/arduino_repository.dart';
@@ -12,6 +13,7 @@ class QuizGameCubit extends Cubit<QuizGameState> {
   List<int> playerScores = List.filled(playersCount, 0);
 
   final ArduinoRepository _arduinoRepo;
+  final AudioPlayer _audioPlayer = AudioPlayer();
   StreamSubscription<ArduinoResponse>? _responseSubscription;
 
   QuizGameCubit(this._arduinoRepo) : super(const QuizGameStateDisconnected()) {
@@ -19,6 +21,11 @@ class QuizGameCubit extends Cubit<QuizGameState> {
   }
 
   Future<void> _init([bool connectNow = true]) async {
+    await _initArduinoRepo(connectNow);
+    await _cacheAudio();
+  }
+
+  Future<void> _initArduinoRepo(bool connectNow) async {
     final ports = await _arduinoRepo.getAvailablePorts();
 
     if (connectNow && ports.length == 1) {
@@ -26,6 +33,12 @@ class QuizGameCubit extends Cubit<QuizGameState> {
     } else {
       emit(QuizGameStateDisconnected(availablePorts: ports));
     }
+  }
+
+  Future<void> _cacheAudio() async {
+    await _audioPlayer.setSource(AssetSource('buzzer.wav'));
+    await _audioPlayer.setPlayerMode(PlayerMode.lowLatency);
+    await _audioPlayer.setReleaseMode(ReleaseMode.stop);
   }
 
   void selectPort(String portName) {
@@ -59,9 +72,9 @@ class QuizGameCubit extends Cubit<QuizGameState> {
 
     if (state is QuizGameStateWaiting) {
       emit(QuizGameStateWaiting(playerScores: playerScores));
-    } else if (state case QuizGameStatePlayerWon(:final playerNumber)) {
+    } else if (state case QuizGameStatePlayerBuzzed(:final playerNumber)) {
       emit(
-        QuizGameStatePlayerWon(
+        QuizGameStatePlayerBuzzed(
           playerNumber: playerNumber,
           playerScores: playerScores,
         ),
@@ -74,14 +87,15 @@ class QuizGameCubit extends Cubit<QuizGameState> {
       case ResetResponse():
         emit(QuizGameStateWaiting(playerScores: playerScores));
 
-      case PlayerWonResponse(:final playerNumber):
+      case PlayerBuzzedResponse(:final playerNumber):
         playerScores = playerScores
             .mapIndexed(
               (index, score) => index + 1 == playerNumber ? score + 1 : score,
             )
             .toList();
+        _playBuzzerSound();
         emit(
-          QuizGameStatePlayerWon(
+          QuizGameStatePlayerBuzzed(
             playerScores: playerScores,
             playerNumber: playerNumber,
           ),
@@ -90,6 +104,10 @@ class QuizGameCubit extends Cubit<QuizGameState> {
       case ErrorResponse(:final message):
         emit(QuizGameStateError(message: message));
     }
+  }
+
+  void _playBuzzerSound() {
+    _audioPlayer.resume();
   }
 
   @override

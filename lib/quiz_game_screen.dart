@@ -46,10 +46,10 @@ class _QuizGameScreenState extends State<QuizGameScreen> {
                   BlocBuilder<QuizGameCubit, QuizGameState>(
                     buildWhen: (_, curr) =>
                         curr is QuizGameStateWaiting ||
-                        curr is QuizGameStatePlayerWon,
+                        curr is QuizGameStatePlayerBuzzed,
                     builder: (context, state) {
                       if (state is! QuizGameStateWaiting &&
-                          state is! QuizGameStatePlayerWon) {
+                          state is! QuizGameStatePlayerBuzzed) {
                         return const SizedBox.shrink();
                       }
 
@@ -105,7 +105,7 @@ class _QuizGameScreenState extends State<QuizGameScreen> {
                               .resetCounter,
                           playerScores: playerScores,
                         ),
-                      QuizGameStatePlayerWon(
+                      QuizGameStatePlayerBuzzed(
                         :final playerNumber,
                         :final playerScores,
                       ) =>

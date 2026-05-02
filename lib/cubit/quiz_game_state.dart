@@ -33,14 +33,14 @@ final class QuizGameStateWaiting extends QuizGameState {
   const QuizGameStateWaiting({required this.playerScores});
 }
 
-final class QuizGameStatePlayerWon extends QuizGameState {
+final class QuizGameStatePlayerBuzzed extends QuizGameState {
   final int playerNumber;
   final List<int> playerScores;
 
   @override
   List<Object?> get props => [playerNumber, playerScores];
 
-  const QuizGameStatePlayerWon({
+  const QuizGameStatePlayerBuzzed({
     required this.playerNumber,
     required this.playerScores,
   });
