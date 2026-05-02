@@ -25,7 +25,7 @@ final class QuizGameStateConnecting extends QuizGameState {
 }
 
 final class QuizGameStateWaiting extends QuizGameState {
-  final Map<int, int> playerScores;
+  final List<int> playerScores;
 
   @override
   List<Object?> get props => [playerScores];
@@ -35,7 +35,7 @@ final class QuizGameStateWaiting extends QuizGameState {
 
 final class QuizGameStatePlayerWon extends QuizGameState {
   final int playerNumber;
-  final Map<int, int> playerScores;
+  final List<int> playerScores;
 
   @override
   List<Object?> get props => [playerNumber, playerScores];

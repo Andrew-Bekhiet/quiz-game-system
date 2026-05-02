@@ -44,7 +44,7 @@ class _QuizGameScreenState extends State<QuizGameScreen> {
                   ),
                   const Spacer(),
                   BlocBuilder<QuizGameCubit, QuizGameState>(
-                    buildWhen: (prev, curr) =>
+                    buildWhen: (_, curr) =>
                         curr is QuizGameStateWaiting ||
                         curr is QuizGameStatePlayerWon,
                     builder: (context, state) {
@@ -296,7 +296,7 @@ class _ConnectingBody extends StatelessWidget {
 }
 
 class _LiveGameBody extends StatelessWidget {
-  final Map<int, int> playerScores;
+  final List<int> playerScores;
   final VoidCallback onResetCounter;
 
   const _LiveGameBody({
@@ -346,7 +346,7 @@ class _LiveGameBody extends StatelessWidget {
             children: [
               Expanded(
                 child: _PlayerPanel(
-                  score: playerScores[1] ?? 0,
+                  score: playerScores[0],
                   team: 1,
                   lit: true,
                   accent: player1Color,
@@ -355,7 +355,7 @@ class _LiveGameBody extends StatelessWidget {
               const SizedBox(width: 16),
               Expanded(
                 child: _PlayerPanel(
-                  score: playerScores[2] ?? 0,
+                  score: playerScores[1],
                   team: 2,
                   lit: true,
                   accent: player2Color,
@@ -453,7 +453,7 @@ class _WinnerBody extends StatelessWidget {
 
   final VoidCallback onResetCounter;
   final int playerNumber;
-  final Map<int, int> playerScores;
+  final List<int> playerScores;
 
   @override
   Widget build(BuildContext context) {
@@ -489,7 +489,7 @@ class _WinnerBody extends StatelessWidget {
           children: [
             Expanded(
               child: _PlayerPanel(
-                score: playerScores[1] ?? 0,
+                score: playerScores[0],
                 team: 1,
                 lit: playerNumber == 1,
                 accent: accent,
@@ -498,7 +498,7 @@ class _WinnerBody extends StatelessWidget {
             const SizedBox(width: 16),
             Expanded(
               child: _PlayerPanel(
-                score: playerScores[2] ?? 0,
+                score: playerScores[1],
                 team: 2,
                 lit: playerNumber == 2,
                 accent: accent,

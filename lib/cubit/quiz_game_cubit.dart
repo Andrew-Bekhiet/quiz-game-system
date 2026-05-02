@@ -1,12 +1,15 @@
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:quiz_app/arduino_repository.dart';
 import 'package:quiz_app/arduino_response.dart';
 import 'package:quiz_app/cubit/quiz_game_state.dart';
 
 class QuizGameCubit extends Cubit<QuizGameState> {
-  final Map<int, int> playerScores = {1: 0, 2: 0};
+  static const playersCount = 2;
+
+  List<int> playerScores = List.filled(playersCount, 0);
 
   final ArduinoRepository _arduinoRepo;
   StreamSubscription<ArduinoResponse>? _responseSubscription;
@@ -52,8 +55,7 @@ class QuizGameCubit extends Cubit<QuizGameState> {
   }
 
   void resetCounter() {
-    playerScores[1] = 0;
-    playerScores[2] = 0;
+    playerScores = List.filled(playersCount, 0);
 
     if (state is QuizGameStateWaiting) {
       emit(QuizGameStateWaiting(playerScores: playerScores));
@@ -73,7 +75,11 @@ class QuizGameCubit extends Cubit<QuizGameState> {
         emit(QuizGameStateWaiting(playerScores: playerScores));
 
       case PlayerWonResponse(:final playerNumber):
-        playerScores[playerNumber] = (playerScores[playerNumber] ?? 0) + 1;
+        playerScores = playerScores
+            .mapIndexed(
+              (index, score) => index + 1 == playerNumber ? score + 1 : score,
+            )
+            .toList();
         emit(
           QuizGameStatePlayerWon(
             playerScores: playerScores,
