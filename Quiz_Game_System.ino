@@ -1,7 +1,3 @@
-#include <SoftwareSerial.h>
-
-SoftwareSerial mySerial(2, 3);
-
 //Pins definition
 const int button1 = 2;
 const int button2 = 3;
@@ -15,6 +11,9 @@ const int buzzer2 = 8;
 bool gameOver = false;
 
 void setup() {
+  Serial.begin(9600);
+  Serial.println("Setup");
+
   pinMode(button1, INPUT);
   pinMode(button2, INPUT);
   pinMode(resetBtn, INPUT);
