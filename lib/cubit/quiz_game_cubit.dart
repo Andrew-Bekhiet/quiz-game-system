@@ -125,6 +125,7 @@ class QuizGameCubit extends Cubit<QuizGameState> {
         .toList(growable: false);
 
     await _sounds.playCorrect();
+    _arduinoRepo.reset();
     emit(QuizGameStateConnected(players: _players, canRenamePlayers: false));
   }
 
@@ -132,6 +133,7 @@ class QuizGameCubit extends Cubit<QuizGameState> {
     if (state is! QuizGameStatePlayerBuzzed) return;
 
     await _sounds.playWrong();
+    _arduinoRepo.reset();
     emit(QuizGameStateConnected(players: _players, canRenamePlayers: false));
   }
 

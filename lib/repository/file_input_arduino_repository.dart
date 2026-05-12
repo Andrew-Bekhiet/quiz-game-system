@@ -47,6 +47,9 @@ class FileInputArduinoRepository implements ArduinoRepository {
     return Future.value(true);
   }
 
+  @override
+  Future<void> reset() async {}
+
   void _handleData(String data) {
     _responseController.add(ArduinoResponse.fromLine(data));
   }

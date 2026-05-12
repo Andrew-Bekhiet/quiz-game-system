@@ -28,7 +28,7 @@ class ArduinoRepository {
       final port = SerialPort(portName);
       _port = port;
 
-      final opened = port.openRead();
+      final opened = port.openReadWrite();
 
       if (!opened) {
         _log('Failed to open port: ${SerialPort.lastError}');
@@ -64,6 +64,10 @@ class ArduinoRepository {
 
       return false;
     }
+  }
+
+  void reset() {
+    _port?.write(utf8.encode('r'));
   }
 
   void _handleData(Uint8List data) {

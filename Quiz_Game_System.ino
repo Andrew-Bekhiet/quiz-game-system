@@ -5,14 +5,11 @@ const int resetBtn = 4;
 
 const int lamp1 = 5;
 const int lamp2 = 6;
-const int buzzer1 = 7;
-const int buzzer2 = 8;
 
 bool gameOver = false;
 
 void setup() {
   Serial.begin(9600);
-  Serial.println("Setup");
 
   pinMode(button1, INPUT);
   pinMode(button2, INPUT);
@@ -20,8 +17,6 @@ void setup() {
 
   pinMode(lamp1, OUTPUT);
   pinMode(lamp2, OUTPUT);
-  pinMode(buzzer1, OUTPUT);
-  pinMode(buzzer2, OUTPUT);
 
   resetSystem(); // Start
 }
@@ -41,7 +36,8 @@ void loop() {
   }
 
   // Switch reading
-  if (digitalRead(resetBtn) == HIGH) {
+  if (digitalRead(resetBtn) == HIGH || (Serial.available() && Serial.read() == 'r'))
+  {
     resetSystem();
   }
 }
@@ -55,13 +51,10 @@ void triggerWinner(int player) {
   if (player == 1) {
     digitalWrite(lamp2, LOW); // loser lamp off
     
-    // flash winner + buzzer sound
     for(int i=0; i<5; i++) {
       digitalWrite(lamp1, LOW);
-      digitalWrite(buzzer1, HIGH);
       delay(100);
       digitalWrite(lamp1, HIGH);
-      digitalWrite(buzzer1, LOW);
       delay(100);
     }
     digitalWrite(lamp1, HIGH); // keep lamp on
@@ -69,13 +62,10 @@ void triggerWinner(int player) {
   else {
     digitalWrite(lamp1, LOW); // loser lamp off
     
-    // flash winner + buzzer sound
     for(int i=0; i<5; i++) {
       digitalWrite(lamp2, LOW);
-      digitalWrite(buzzer2, HIGH);
       delay(100);
       digitalWrite(lamp2, HIGH);
-      digitalWrite(buzzer2, LOW);
       delay(100);
     }
     digitalWrite(lamp2, HIGH); // keep lamp on
@@ -87,9 +77,6 @@ void resetSystem() {
   // in start lamps on
   digitalWrite(lamp1, HIGH);
   digitalWrite(lamp2, HIGH);
-  // buzzers off
-  digitalWrite(buzzer1, LOW);
-  digitalWrite(buzzer2, LOW);
 
   // notify ui
   Serial.println('r');
